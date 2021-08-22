@@ -77,12 +77,10 @@ function connectTo(id) {
   console.log('connecting...');
   oppPeer = thisPeer.connect(id);
   oppPeer.on('error', err => {
-    oppPeer = null;
     elInfo.innerHTML = `⛔ connection error`;
     console.log(err);
   });
   oppPeer.on('close', err => {
-    oppPeer = null;
     elInfo.innerHTML = `⛔ connection ended`;
     createChatBubbleInfo('connection ended!');
     console.log(err);
