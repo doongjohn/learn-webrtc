@@ -47,7 +47,7 @@ thisPeer.on('connection', (opp) => {
   console.log('data received!');
   opp.on('data', (data) => {
     if (data.type == 'init') {
-      connectTo(data.sender);
+      answerConnectTo(data.sender);
     } else {
       createChatBubble(data.message);
     }
@@ -71,6 +71,20 @@ function connectTo(id) {
       type: 'init',
       message: ''
     });
+  });
+}
+
+function answerConnectTo(id) {
+  console.log('connecting...');
+  oppPeer = thisPeer.connect(id);
+  oppPeer.on('error', (e) => {
+    console.log(e);
+  });
+  oppPeer.on('close', () => {
+    oppPeer = null;
+  });
+  oppPeer.on('open', () => {
+    createChatBubbleInfo('connection successful!');
   });
 }
 
