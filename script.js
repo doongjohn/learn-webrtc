@@ -24,9 +24,9 @@ function createChatBubbleInfo(text) {
   elChatView.scrollTop = elChatView.scrollHeight; // scroll to bottom
 }
 
-// peer object
+// p2p data
 let thisPeer = null;
-let oppPeer = null;
+let oppConn = null;
 
 elInfo.innerText = '⚙️ initializing...';
 thisPeer = new Peer();
@@ -53,8 +53,8 @@ thisPeer.on('open', (id) => {
     // connect to initializer
     elInfo.innerText = `🔎 connecting...`;
     connectTo(atob(location.hash.substring(1)));
-    oppPeer.on('open', () => {
-      oppPeer.send({
+    oppConn.on('open', () => {
+      oppConn.send({
         sender: thisPeer.id,
         type: 'init',
         message: ''
@@ -75,39 +75,26 @@ thisPeer.on('connection', (opp) => {
 
 function connectTo(id) {
   console.log('connecting...');
-  oppPeer = thisPeer.connect(id);
-  oppPeer.on('open', () => {
+  oppConn = thisPeer.connect(id);
+  oppConn.on('open', () => {
     elInfo.innerHTML = `✔️ connected`;
     createChatBubbleInfo('connection started!');
   });
-  oppPeer.on('disconnected', err => {
+  oppConn.on('close', err => {
     elInfo.innerHTML = `⛔ connection ended`;
     createChatBubbleInfo('connection ended!');
-    oppPeer = null;
+    oppConn = null;
     console.log(err);
   });
-  oppPeer.on('close', err => {
-    elInfo.innerHTML = `⛔ connection ended`;
-    createChatBubbleInfo('connection ended!');
-    oppPeer = null;
-    console.log(err);
-  });
-  oppPeer.on('error', err => {
+  oppConn.on('error', err => {
     elInfo.innerHTML = `⛔ connection error`;
-    oppPeer = null;
+    oppConn = null;
     console.log(err);
   });
 }
 
 function sendText(text) {
-  if (oppPeer.disconnected || oppPeer.destroyed) {
-    elInfo.innerHTML = `⛔ connection ended`;
-    createChatBubbleInfo('connection ended!');
-    oppPeer = null;
-    return;
-  }
-
-  oppPeer.send({
+  oppConn.send({
     sender: thisPeer.id,
     type: 'txt',
     message: text
@@ -116,7 +103,7 @@ function sendText(text) {
 
 // input event
 elChatInput.addEventListener('keypress', event => {
-  if (!thisPeer || !oppPeer) {
+  if (!thisPeer || !oppConn) {
     event.preventDefault();
     return;
   }
@@ -133,6 +120,8 @@ elChatInput.addEventListener('keypress', event => {
 });
 
 // on page exit
-window.addEventListener("onunload", event => {
-  thisPeer.destroy();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === 'hidden') {
+    thisPeer.destroy();
+  }
 });
