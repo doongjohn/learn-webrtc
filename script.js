@@ -44,7 +44,8 @@ thisPeer.on('open', (id) => {
     location.hash = btoa(id);
     // const link = `localhost:5500/${location.hash}`;
     const link = `doongjohn.github.io/learn-webrtc/${location.hash}`;
-    elInfo.innerHTML = `link: <a href="https://${link}">${link}</a>`;
+    // elInfo.innerHTML = `link: <a href="https://${link}">${link}</a>`
+    elInfo.innerHTML = `now you can your link`;
   } else {
     elInfo.innerText = `connecting...`;
     const id = atob(location.hash.substring(1));
