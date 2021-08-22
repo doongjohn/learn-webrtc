@@ -7,6 +7,9 @@ function createChatBubble(text) {
   chatBubble.classList.add('chat-bubble');
   chatBubble.innerText = text;
   elChatView.appendChild(chatBubble);
+
+  // scroll to bottom
+  elChatView.scrollTop = elChatView.scrollHeight;
 }
 
 function createChatBubbleSelf(text) {
@@ -14,6 +17,9 @@ function createChatBubbleSelf(text) {
   chatBubble.classList.add('chat-bubble-self');
   chatBubble.innerText = text;
   elChatView.appendChild(chatBubble);
+
+  // scroll to bottom
+  elChatView.scrollTop = elChatView.scrollHeight;
 }
 
 function createChatBubbleInfo(text) {
@@ -21,6 +27,9 @@ function createChatBubbleInfo(text) {
   chatBubble.classList.add('chat-bubble-info');
   chatBubble.innerText = text;
   elChatView.appendChild(chatBubble);
+
+  // scroll to bottom
+  elChatView.scrollTop = elChatView.scrollHeight;
 }
 
 
