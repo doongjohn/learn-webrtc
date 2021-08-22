@@ -76,8 +76,13 @@ thisPeer.on('connection', (opp) => {
 function connectTo(id) {
   console.log('connecting...');
   oppPeer = thisPeer.connect(id);
-  oppPeer.on('error', err => {
-    elInfo.innerHTML = `⛔ connection error`;
+  oppPeer.on('open', () => {
+    elInfo.innerHTML = `✔️ connected`;
+    createChatBubbleInfo('connection started!');
+  });
+  oppPeer.on('disconnected', err => {
+    elInfo.innerHTML = `⛔ connection disconnected`;
+    createChatBubbleInfo('connection disconnected!');
     console.log(err);
   });
   oppPeer.on('close', err => {
@@ -85,9 +90,9 @@ function connectTo(id) {
     createChatBubbleInfo('connection ended!');
     console.log(err);
   });
-  oppPeer.on('open', () => {
-    elInfo.innerHTML = `✔️ connected`;
-    createChatBubbleInfo('connection started!');
+  oppPeer.on('error', err => {
+    elInfo.innerHTML = `⛔ connection error`;
+    console.log(err);
   });
 }
 
