@@ -117,3 +117,8 @@ elChatInput.addEventListener('keypress', event => {
     elChatInput.value = '';
   }
 });
+
+// on page exit
+window.addEventListener("beforeunload", event => {
+  thisPeer.destroy();
+});
