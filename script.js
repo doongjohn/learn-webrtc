@@ -1,13 +1,7 @@
-// const customGenerationFunction = () => (Math.random().toString(36) + '0000000000000000000').substr(2, 16);
-
-let thisId;
-let oppId;
+let thisPeer;
 let oppPeer;
-let message;
 
-console.log('app starting...');
-
-const peer = new Peer('', {
+const peerConfig = {
   config: {
     'iceServers': [
       { url: 'stun:stun.l.google.com:19302' },
@@ -15,35 +9,47 @@ const peer = new Peer('', {
       { url: 'stun:stun2.l.google.com:19302' },
     ]
   }
+};
+
+console.log('initializing this peer...');
+thisPeer = new Peer(null, peerConfig);
+
+console.log('opening this peer ...');
+thisPeer.on('open', (id) => {
+  console.log(`this peer opened! ${thisPeer.id}`);
 });
 
-console.log('peer opening...');
-
-peer.on('open', (id) => {
-  thisId = id;
-  console.log(id);
-});
-
-peer.on('connection', (opp) => {
-  console.log('connected to peer oppnent!');
-
+thisPeer.on('connection', (opp) => {
+  console.log('connected to oppnent peer!');
   opp.on('data', (data) => {
-    message = data.message;
-    alert(data.message);
+    if (data.type == 'init') {
+      alert('other person has connected to you!');
+    } else {
+      alert(data.message);
+    }
   });
 });
 
-function connectWithOpp(id) {
-  console.log('connecting to peer oppnent...');
-
-  oppPeer = peer.connect(id);
+function connectTo(id) {
+  console.log('connecting...');
+  oppPeer = thisPeer.connect(id);
 
   oppPeer.on('open', () => {
+    console.log('connected!');
     const msg = {
-      sender: thisId,
+      sender: thisPeer.id,
+      type: 'init',
       message: 'hello'
     };
-
     oppPeer.send(msg);
   });
+}
+
+function sendText(text) {
+  const msg = {
+    sender: thisPeer.id,
+    type: 'txt',
+    message: text
+  };
+  oppPeer.send(msg);
 }
