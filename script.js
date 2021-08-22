@@ -3,7 +3,7 @@
 let thisId;
 let oppId;
 let oppPeer;
-let messages;
+let message;
 
 console.log('app starting...');
 
@@ -28,8 +28,8 @@ peer.on('connection', (opp) => {
   console.log('connected to peer oppnent!');
 
   opp.on('data', (data) => {
-    messages = data.message;
-    console.log(data.message);
+    message = data.message;
+    alert(data.message);
   });
 });
 
@@ -38,15 +38,12 @@ function connectWithOpp(id) {
 
   oppPeer = peer.connect(id);
 
-  conn.on('open', () => {
+  oppPeer.on('open', () => {
     const msg = {
       sender: thisId,
-      message: message
+      message: 'hello'
     };
 
-    conn.send(msg);
-
-    message = '';
-    messages = [...messages, msg];
+    oppPeer.send(msg);
   });
 }
