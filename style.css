@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap');
+
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    margin: 3em;
+}
+#info {
+    color: white;
+    margin-top: 0.5em;
+    padding: 0.5em;
+    background-color: #81bcff;
+    border-radius: 4px;
+}
+#chat-view {
+    margin: 1em 0;
+    padding: 0.5em;
+    min-height: 10em;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+}
+#chat-input {
+    box-sizing: border-box;
+    resize: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    padding: 0.5em;
+    width: 100%;
+    border-width: 4px;
+    border-radius: 4px;
+    border-color: #c5e0ff;
+    font-size: 16px;
+}
+#chat-input:focus {
+    outline: none;
+    border-color: #81bcff;
+}
+.chat-bubble,
+.chat-bubble-self,
+.chat-bubble-info {
+    margin-bottom: 0.5em;
+    padding: 0.5em;
+    width: fit-content;
+    background-color: #a8d8ff;
+    border-radius: 4px;
+}
+.chat-bubble-self {
+    margin-left: auto;
+    margin-right: 0;
+    background-color: #ffffff;
+}
+.chat-bubble-info {
+    text-align: center;
+    color: white;
+    padding: 0.2em;
+    margin-right: auto;
+    margin-left: auto;
+    width: calc(100% - 1em);
+    background-color: #cccccc;
+}

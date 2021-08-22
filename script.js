@@ -1,30 +1,54 @@
-let thisPeer;
-let oppPeer;
+const elInfo = document.getElementById('info');
+const elChatView = document.getElementById('chat-view');
+const elChatInput = document.getElementById('chat-input');
 
-const peerConfig = {
-  config: {
-    'iceServers': [
-      { url: 'stun:stun.l.google.com:19302' },
-      { url: 'stun:stun1.l.google.com:19302' },
-      { url: 'stun:stun2.l.google.com:19302' },
-    ]
-  }
-};
+function createChatBubble(text) {
+  const chatBubble = document.createElement('div');
+  chatBubble.classList.add('chat-bubble');
+  chatBubble.innerText = text;
+  elChatView.appendChild(chatBubble);
+}
+
+function createChatBubbleSelf(text) {
+  const chatBubble = document.createElement('div');
+  chatBubble.classList.add('chat-bubble-self');
+  chatBubble.innerText = text;
+  elChatView.appendChild(chatBubble);
+}
+
+function createChatBubbleInfo(text) {
+  const chatBubble = document.createElement('div');
+  chatBubble.classList.add('chat-bubble-info');
+  chatBubble.innerText = text;
+  elChatView.appendChild(chatBubble);
+}
+
+
+let thisPeer = null;
+let oppPeer = null;
 
 console.log('initializing this peer...');
-thisPeer = new Peer(null, peerConfig);
+thisPeer = new Peer();
 
 thisPeer.on('open', (id) => {
-  console.log(`this peer opened! ${thisPeer.id}`);
+  if (!location.hash) {
+    location.hash = btoa(id);
+    const link = `localhost:5500/${location.hash}`;
+    elInfo.innerHTML = `link: <a href="http://${link}">${link}</a>`;
+  } else {
+    elInfo.innerText = `connecting...`;
+    const id = atob(location.hash.substring(1));
+    connectTo(id);
+  }
 });
 
 thisPeer.on('connection', (opp) => {
-  console.log('connected to oppnent peer!');
+  console.log('data received!');
   opp.on('data', (data) => {
     if (data.type == 'init') {
-      alert('other person has connected to you!');
+      if (!oppPeer) connectTo(data.sender);
     } else {
-      alert(data.message);
+      createChatBubble(data.message);
     }
   });
 });
@@ -32,19 +56,22 @@ thisPeer.on('connection', (opp) => {
 function connectTo(id) {
   console.log('connecting...');
   oppPeer = thisPeer.connect(id);
-
+  oppPeer.on('error', (e) => {
+    console.log(e);
+  });
   oppPeer.on('open', () => {
-    console.log('connected!');
-    const msg = {
+    elInfo.innerHTML = `connected`;
+    createChatBubbleInfo('connection successful!');
+    oppPeer.send({
       sender: thisPeer.id,
       type: 'init',
       message: 'hello'
-    };
-    oppPeer.send(msg);
+    });
   });
 }
 
 function sendText(text) {
+  if (!oppPeer) return;
   const msg = {
     sender: thisPeer.id,
     type: 'txt',
@@ -52,3 +79,17 @@ function sendText(text) {
   };
   oppPeer.send(msg);
 }
+
+
+elChatInput.addEventListener('keypress', event => {
+  if (event.ctrlKey && event.key == '\n') {
+    elChatInput.value += '\n';
+    return;
+  }
+  if (event.key == 'Enter') {
+    event.preventDefault();
+    sendText(elChatInput.value);
+    createChatBubbleSelf(elChatInput.value);
+    elChatInput.value = '';
+  }
+});
