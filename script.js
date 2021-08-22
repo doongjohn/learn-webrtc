@@ -7,57 +7,66 @@ function createChatBubble(text) {
   chatBubble.classList.add('chat-bubble');
   chatBubble.innerText = text;
   elChatView.appendChild(chatBubble);
-
-  // scroll to bottom
-  elChatView.scrollTop = elChatView.scrollHeight;
+  elChatView.scrollTop = elChatView.scrollHeight; // scroll to bottom
 }
-
 function createChatBubbleSelf(text) {
   const chatBubble = document.createElement('div');
   chatBubble.classList.add('chat-bubble-self');
   chatBubble.innerText = text;
   elChatView.appendChild(chatBubble);
-
-  // scroll to bottom
-  elChatView.scrollTop = elChatView.scrollHeight;
+  elChatView.scrollTop = elChatView.scrollHeight; // scroll to bottom
 }
-
 function createChatBubbleInfo(text) {
   const chatBubble = document.createElement('div');
   chatBubble.classList.add('chat-bubble-info');
   chatBubble.innerText = text;
   elChatView.appendChild(chatBubble);
-
-  // scroll to bottom
-  elChatView.scrollTop = elChatView.scrollHeight;
+  elChatView.scrollTop = elChatView.scrollHeight; // scroll to bottom
 }
 
-
+// peer object
 let thisPeer = null;
 let oppPeer = null;
 
-console.log('initializing this peer...');
+elInfo.innerText = '⚙️ initializing...';
 thisPeer = new Peer();
-
 thisPeer.on('open', (id) => {
+  // if initializer reloads the page
+  // it will regenerate fresh link
+  const prevID = sessionStorage.getItem('prevID');
+  if (location.hash && prevID) {
+    if (location.hash == prevID) {
+      // you are the initializer
+      location.hash = btoa(id);
+      sessionStorage.setItem('prevID', location.hash);
+      elInfo.innerHTML = `🚀 share your link`;
+      return;
+    }
+  }
+
   if (!location.hash) {
+    // you are the initializer
     location.hash = btoa(id);
-    // const link = `localhost:5500/${location.hash}`;
-    const link = `doongjohn.github.io/learn-webrtc/${location.hash}`;
-    // elInfo.innerHTML = `link: <a href="https://${link}">${link}</a>`
-    elInfo.innerHTML = `now you can your link`;
+    sessionStorage.setItem('prevID', location.hash);
+    elInfo.innerHTML = `🚀 share your link`;
   } else {
-    elInfo.innerText = `connecting...`;
-    const id = atob(location.hash.substring(1));
-    connectTo(id);
+    // connect to initializer
+    elInfo.innerText = `🔎 connecting...`;
+    connectTo(atob(location.hash.substring(1)));
+    oppPeer.on('open', () => {
+      oppPeer.send({
+        sender: thisPeer.id,
+        type: 'init',
+        message: ''
+      });
+    });
   }
 });
-
 thisPeer.on('connection', (opp) => {
   console.log('data received!');
   opp.on('data', (data) => {
     if (data.type == 'init') {
-      answerConnectTo(data.sender);
+      connectTo(data.sender);
     } else {
       createChatBubble(data.message);
     }
@@ -67,40 +76,24 @@ thisPeer.on('connection', (opp) => {
 function connectTo(id) {
   console.log('connecting...');
   oppPeer = thisPeer.connect(id);
-  oppPeer.on('error', (e) => {
-    console.log(e);
-  });
-  oppPeer.on('close', () => {
+  oppPeer.on('error', err => {
     oppPeer = null;
-    elInfo.innerHTML = `connection ended`;
+    elInfo.innerHTML = `⛔ connection error`;
+    console.log(err);
+  });
+  oppPeer.on('close', err => {
+    oppPeer = null;
+    elInfo.innerHTML = `⛔ connection ended`;
+    createChatBubbleInfo('connection ended!');
+    console.log(err);
   });
   oppPeer.on('open', () => {
-    elInfo.innerHTML = `connected`;
-    createChatBubbleInfo('connection successful!');
-    oppPeer.send({
-      sender: thisPeer.id,
-      type: 'init',
-      message: ''
-    });
-  });
-}
-
-function answerConnectTo(id) {
-  console.log('connecting...');
-  oppPeer = thisPeer.connect(id);
-  oppPeer.on('error', (e) => {
-    console.log(e);
-  });
-  oppPeer.on('close', () => {
-    oppPeer = null;
-  });
-  oppPeer.on('open', () => {
-    createChatBubbleInfo('connection successful!');
+    elInfo.innerHTML = `✔️ connected`;
+    createChatBubbleInfo('connection started!');
   });
 }
 
 function sendText(text) {
-  if (!oppPeer) return;
   const msg = {
     sender: thisPeer.id,
     type: 'txt',
@@ -109,8 +102,12 @@ function sendText(text) {
   oppPeer.send(msg);
 }
 
-
+// input event
 elChatInput.addEventListener('keypress', event => {
+  if (!thisPeer || !oppPeer) {
+    event.preventDefault();
+    return;
+  }
   if (event.ctrlKey && event.key == '\n') {
     elChatInput.value += '\n';
     return;
