@@ -124,6 +124,6 @@ elChatInput.addEventListener('keypress', event => {
 });
 
 // on page exit
-window.addEventListener("beforeunload", event => {
+window.addEventListener("onunload", event => {
   thisPeer.destroy();
 });
