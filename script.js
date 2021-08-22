@@ -62,6 +62,7 @@ function connectTo(id) {
   });
   oppPeer.on('close', () => {
     oppPeer = null;
+    elInfo.innerHTML = `connection ended`;
   });
   oppPeer.on('open', () => {
     elInfo.innerHTML = `connected`;

@@ -2,7 +2,10 @@
 
 body {
     font-family: 'Noto Sans KR', sans-serif;
-    margin: 3em;
+}
+#wrapper {
+    max-width: 800px;
+    margin: 0 auto;
 }
 #info {
     color: white;
@@ -19,6 +22,7 @@ body {
     border-radius: 4px;
 }
 #chat-input {
+    display: block;
     box-sizing: border-box;
     resize: none;
     font-family: 'Noto Sans KR', sans-serif;
