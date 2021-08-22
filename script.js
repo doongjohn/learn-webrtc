@@ -125,3 +125,8 @@ document.addEventListener("visibilitychange", () => {
     thisPeer.destroy();
   }
 });
+window.addEventListener("pagehide", event => {
+  if (!event.persisted) {
+    thisPeer?.destroy();
+  }
+}, false);
