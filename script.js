@@ -81,28 +81,37 @@ function connectTo(id) {
     createChatBubbleInfo('connection started!');
   });
   oppPeer.on('disconnected', err => {
-    elInfo.innerHTML = `⛔ connection disconnected`;
-    createChatBubbleInfo('connection disconnected!');
+    elInfo.innerHTML = `⛔ connection ended`;
+    createChatBubbleInfo('connection ended!');
+    oppPeer = null;
     console.log(err);
   });
   oppPeer.on('close', err => {
     elInfo.innerHTML = `⛔ connection ended`;
     createChatBubbleInfo('connection ended!');
+    oppPeer = null;
     console.log(err);
   });
   oppPeer.on('error', err => {
     elInfo.innerHTML = `⛔ connection error`;
+    oppPeer = null;
     console.log(err);
   });
 }
 
 function sendText(text) {
-  const msg = {
+  if (oppPeer.disconnected || oppPeer.destroyed) {
+    elInfo.innerHTML = `⛔ connection ended`;
+    createChatBubbleInfo('connection ended!');
+    oppPeer = null;
+    return;
+  }
+
+  oppPeer.send({
     sender: thisPeer.id,
     type: 'txt',
     message: text
-  };
-  oppPeer.send(msg);
+  });
 }
 
 // input event
