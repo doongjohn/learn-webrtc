@@ -14,7 +14,6 @@ const peerConfig = {
 console.log('initializing this peer...');
 thisPeer = new Peer(null, peerConfig);
 
-console.log('opening this peer ...');
 thisPeer.on('open', (id) => {
   console.log(`this peer opened! ${thisPeer.id}`);
 });
