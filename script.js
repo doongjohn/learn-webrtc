@@ -12,8 +12,11 @@ function chatInputStart() {
 
     if (event.key == 'Enter') {
       event.preventDefault();
-      sendText(elChatInput.value);
-      createChatBubbleSelf(elChatInput.value);
+      const input = elChatInput.value.trimEnd();
+      if (input) {
+        sendText(input);
+        createChatBubbleSelf(elChatInput.value);
+      }
       elChatInput.value = '';
     }
   });
@@ -41,7 +44,7 @@ function createChatBubbleInfo(text) {
   elChatView.scrollTop = elChatView.scrollHeight; // scroll to bottom
 }
 
-// p2p data
+// connection data
 const peer = new Peer(null, {
   'iceServers': [
     // Public STUN server list
@@ -61,12 +64,12 @@ const peer = new Peer(null, {
   ]
 });
 let oppConn = null;
+let oppId = null;
 
 function main() {
-  elChatInput.setAttribute('readonly', 'true');
 
   elInfo.innerText = '⚙️ initializing...';
-  peer.on('open', (id) => {
+  peer.on('open', id => {
     const prevID = sessionStorage.getItem('prevID');
     if (!location.hash || (location.hash && prevID && location.hash == prevID)) {
       // if you are the initializer
@@ -79,14 +82,24 @@ function main() {
 
     // connect to initializer
     elInfo.innerText = `🔎 connecting...`;
-    oppConn = connectTo(atob(location.hash.substring(1)));
-    oppConn.on('open', () => {
+    oppId = atob(location.hash.substring(1));
+    function initConnection() {
       oppConn.send({
         sender: peer.id,
         type: 'init',
         message: ''
       });
       chatInputStart();
+    }
+    const interval = setInterval(() => {
+      oppConn = connectTo(oppId, () => {
+        clearInterval(interval);
+        initConnection();
+      });
+    }, 1000);
+    oppConn = connectTo(oppId, () => {
+      clearInterval(interval);
+      initConnection();
     });
   });
 
@@ -108,38 +121,42 @@ function main() {
   });
 
   // on page exit
-  window.addEventListener("beforeunload", event => {
-    alert('Do you really want to exit?');
-    peer?.destroy();
-    window.close();
-  });
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === 'hidden')
+  window.addEventListener('beforeunload', event => {
+    event.preventDefault();
+    event.returnValue = '';
+    const result = confirm();
+    if (result) {
       peer?.destroy();
+      window.close();
+    }
   });
-  window.addEventListener("pagehide", event => {
-    if (!event.persisted)
+  // document.addEventListener('visibilitychange', () => {
+  //   if (document.visibilityState === 'hidden')
+  //     peer?.destroy();
+  // });
+  window.addEventListener('pagehide', event => {
+    if (!event.persisted) {
       peer?.destroy();
+    }
   });
 }
 
-function connectTo(id) {
+function connectTo(id, onOpen = null) {
   console.log('connecting...');
   const conn = peer.connect(id);
   conn.on('open', () => {
+    onOpen?.call(this);
     elInfo.innerHTML = `✔️ connected`;
     createChatBubbleInfo('connection started!');
   });
   conn.on('close', err => {
     elInfo.innerHTML = `⛔ connection ended`;
     createChatBubbleInfo('connection ended!');
-    conn = null;
     console.log(err);
   });
   conn.on('error', err => {
     elInfo.innerHTML = `⛔ connection lost`;
     createChatBubbleInfo('connection lost!');
-    conn = null;
     console.log(err);
   });
   return conn;
