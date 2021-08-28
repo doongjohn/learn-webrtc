@@ -63,44 +63,142 @@ const peer = new Peer(null, {
     { 'urls': 's2.taraba.net' },
   ]
 });
-let oppConn = null;
-let oppId = null;
+let initializer = false;
+let initializerConn = null;
+let oppConns = new Map();
+
+function updateConnectionInfo(type) {
+  if (initializer) {
+    if (oppConns.size == 0) {
+      elInfo.innerHTML = '🚀 share your link (no people in this chat)';
+    } else {
+      elInfo.innerHTML = `✔️ ${oppConns.size} people connected`;
+    }
+  } else {
+    if (!type) return;
+    switch (type) {
+      case 'open':
+        elInfo.innerHTML = '✔️ connected'
+        break;
+      case 'close':
+        elInfo.innerHTML = '⛔ connection ended'
+        break;
+      case 'error':
+        elInfo.innerHTML = '⛔ connection lost'
+        break;
+    }
+  }
+}
+
+function connectTo(id, onOpen = null) {
+  console.log('connecting...');
+  const conn = peer.connect(id);
+  conn.on('open', () => {
+    onOpen?.call(this, conn);
+    updateConnectionInfo('open');
+    createChatBubbleInfo('connection started!');
+  });
+  conn.on('close', err => {
+    oppConns.delete(id);
+    updateConnectionInfo('close');
+    createChatBubbleInfo('connection ended!');
+    console.log(err);
+  });
+  conn.on('error', err => {
+    oppConns.delete(id);
+    updateConnectionInfo('error');
+    createChatBubbleInfo('connection lost!');
+    console.log(err);
+  });
+  return conn;
+}
+
+function disconnectFromInitializer() {
+  initializerConn?.send({
+    sender: peer.id,
+    type: 'deinit',
+    message: null
+  });
+  initializerConn?.close();
+  peer.disconnect();
+  peer.destroy();
+}
+
+function broadcast(fn) {
+  for (const [id, conn] of oppConns)
+    fn(id, conn);
+}
+
+function sendText(text) {
+  if (initializer) {
+    broadcast((id, conn) => {
+      conn.send({
+        sender: peer.id,
+        type: 'txt',
+        message: text
+      });
+    });
+  } else {
+    initializerConn.send({
+      sender: peer.id,
+      type: 'txt',
+      message: text
+    });
+  }
+}
+
+let unloading = false;
 
 function main() {
+  // on page exit
+  window.addEventListener('beforeunload', event => {
+    unloading = true;
+    disconnectFromInitializer();
+  });
+  window.addEventListener('unload', event => {
+    disconnectFromInitializer();
+  });
+  document.addEventListener("visibilitychange", event => {
+    if (unloading)
+      disconnectFromInitializer();
+  });
+  window.addEventListener('pagehide', event => {
+    if (!event.persisted)
+      disconnectFromInitializer();
+  });
 
   elInfo.innerText = '⚙️ initializing...';
   peer.on('open', id => {
     const prevID = sessionStorage.getItem('prevID');
     if (!location.hash || (location.hash && prevID && location.hash == prevID)) {
-      // if you are the initializer
       // reloading the page will generate a fresh link
+      initializer = true;
       location.hash = btoa(id);
       sessionStorage.setItem('prevID', location.hash);
       elInfo.innerText = `🚀 share your link`;
-      return;
-    }
-
-    // connect to initializer
-    elInfo.innerText = `🔎 connecting...`;
-    oppId = atob(location.hash.substring(1));
-    function initConnection() {
-      oppConn.send({
-        sender: peer.id,
-        type: 'init',
-        message: ''
-      });
-      chatInputStart();
-    }
-    const interval = setInterval(() => {
-      oppConn = connectTo(oppId, () => {
+    } else {
+      // connect to initializer
+      elInfo.innerText = `🔎 connecting...`;
+      const initializerId = atob(location.hash.substring(1));
+      function initConnection() {
+        initializerConn.send({
+          sender: peer.id,
+          type: 'init',
+          message: null
+        });
+        chatInputStart();
+      }
+      const interval = setInterval(() => {
+        initializerConn = connectTo(initializerId, () => {
+          clearInterval(interval);
+          initConnection();
+        });
+      }, 1000);
+      initializerConn = connectTo(initializerId, () => {
         clearInterval(interval);
         initConnection();
       });
-    }, 1000);
-    oppConn = connectTo(oppId, () => {
-      clearInterval(interval);
-      initConnection();
-    });
+    }
   });
 
   peer.on('connection', (conn) => {
@@ -108,65 +206,30 @@ function main() {
       console.log('data received!');
       switch (data.type) {
         case 'init':
-          // when you are the initializer
-          oppConn = connectTo(data.sender);
-          chatInputStart();
+          connectTo(data.sender, (conn) => {
+            oppConns.set(data.sender, conn);
+            chatInputStart();
+          });
+          break;
+        case 'deinit':
+          oppConns.get(data.sender).close();
+          oppConns.delete(data.sender);
+          updateConnectionInfo('');
           break;
         default:
+          broadcast((id, conn) => {
+            if (data.sender == id) return;
+            conn.send({
+              sender: id,
+              type: 'txt',
+              message: data.message
+            });
+          });
           // create chat bubble
           createChatBubble(data.message);
           break;
       }
     });
-  });
-
-  // on page exit
-  window.addEventListener('beforeunload', event => {
-    event.preventDefault();
-    event.returnValue = '';
-    const result = confirm();
-    if (result) {
-      peer?.destroy();
-      window.close();
-    }
-  });
-  // document.addEventListener('visibilitychange', () => {
-  //   if (document.visibilityState === 'hidden')
-  //     peer?.destroy();
-  // });
-  window.addEventListener('pagehide', event => {
-    if (!event.persisted) {
-      peer?.destroy();
-    }
-  });
-}
-
-function connectTo(id, onOpen = null) {
-  console.log('connecting...');
-  const conn = peer.connect(id);
-  conn.on('open', () => {
-    onOpen?.call(this);
-    elInfo.innerHTML = `✔️ connected`;
-    createChatBubbleInfo('connection started!');
-  });
-  conn.on('close', err => {
-    elInfo.innerHTML = `⛔ connection ended`;
-    createChatBubbleInfo('connection ended!');
-    console.log(err);
-  });
-  conn.on('error', err => {
-    elInfo.innerHTML = `⛔ connection lost`;
-    createChatBubbleInfo('connection lost!');
-    console.log(err);
-  });
-  return conn;
-}
-
-function sendText(text) {
-  oppConn.send({
-    sender: peer.id,
-    type: 'txt',
-    message: text
   });
 }
 
