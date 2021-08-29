@@ -9,7 +9,6 @@ function chatInputStart() {
       elChatInput.value += '\n';
       return;
     }
-
     if (event.key == 'Enter') {
       event.preventDefault();
       const input = elChatInput.value.trimEnd();
@@ -65,7 +64,7 @@ const peer = new Peer(null, {
 });
 let initializer = false;
 let initializerConn = null;
-let oppConns = new Map();
+let oppConns = null;
 
 function updateConnectionInfo(type) {
   if (initializer) {
@@ -125,7 +124,7 @@ function disconnectFromInitializer() {
 }
 
 function broadcast(fn) {
-  for (const [id, conn] of oppConns)
+  for (let [id, conn] of oppConns)
     fn(id, conn);
 }
 
@@ -173,6 +172,7 @@ function main() {
     if (!location.hash || (location.hash && prevID && location.hash == prevID)) {
       // reloading the page will generate a fresh link
       initializer = true;
+      oppConns = new Map();
       location.hash = btoa(id);
       sessionStorage.setItem('prevID', location.hash);
       elInfo.innerText = `🚀 share your link`;
